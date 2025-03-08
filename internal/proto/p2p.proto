@@ -2,8 +2,107 @@ syntax = "proto3";
 package message;
 option go_package = "github.com/GoldenDeals/StatusCoin/internal/gen";
 
-message MyMessage {
-    string content = 1;
-    int64 timestamp = 2;
+enum Function {
+    EM_UNSPECIFIED         = 0;
+    EM_HandShake           = 1;
+    EM_HandShakeDecision   = 2;
+    EM_GetInfo             = 3;
+    EM_GetInfoAns          = 4;
+    EM_GetPeers            = 5;
+    EM_GetPeersAns         = 6;
 }
 
+// Connection Fundamentals
+message HandShake {
+    uint32 protocol_version = 1;   
+    string client_version = 2;     
+    bytes node_id = 3;     
+    repeated string capabilities = 5;
+}
+
+message HandShakeDecision {
+    bool accepted = 1;     
+    bytes node_id = 2;             
+    repeated string capabilities = 3; 
+    optional string rejection_reason = 4;   
+}
+
+// Node Information Exchange
+message GetInfo {
+    bool request_geo_info = 4;     
+}
+
+message GetInfoAns {
+    string version = 2;     
+    string network = 3;     
+    uint64 uptime = 4;      
+    uint32 connections = 5; 
+    
+    optional GeoLocation location = 7; 
+}
+
+// Peer Discovery
+message GetPeers {
+    uint32 max_count = 2;
+}
+message GetPeersAns {
+    repeated Peer peers = 2;
+}
+
+enum PeerStatus {
+    EM_UNKNOWN = 0;
+    EM_CONNECTED = 1;
+    EM_DISCONNECTED = 2;
+    EM_BANNED = 3;
+}
+message Peer {
+    bytes id = 1;                 
+    string address = 2;           
+    uint32 port = 3;              
+    uint32 protocol = 4;          
+    uint64 last_seen = 5;         
+    uint32 latency = 6;           
+    PeerStatus status = 7;         
+    optional GeoLocation location = 8;
+}
+
+message Error {
+    ErrorCode code = 2;
+    string message = 3;
+    bytes original_message = 4;    // Original message that caused error
+}
+
+enum ErrorCode {
+    NO_ERROR = 0;
+    INVALID_PROTOCOL = 1;
+    VERSION_MISMATCH = 2;
+    RATE_LIMITED = 3;
+    BANNED = 4;
+    INVALID_SIGNATURE = 5;
+    INTERNAL_ERROR = 6;
+}
+
+// Additional Structures
+message GeoLocation {
+    string country = 1;
+    string region = 2;
+    string city = 3;
+    float latitude = 4;
+    float longitude = 5;
+}
+
+message WrapperMessage {
+    uint64 sessId = 1;
+    Function type = 2;            
+
+    oneof msg {
+        HandShake hs = 3;
+        HandShakeDecision hsd = 4; 
+        GetInfo gi = 5;
+        GetInfoAns gia = 6;
+        GetPeers gp = 7;
+        GetPeersAns gpa = 8;
+        Error err = 9;
+    }
+
+}

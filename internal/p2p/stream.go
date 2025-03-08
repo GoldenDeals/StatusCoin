@@ -1,11 +1,12 @@
 package p2p
 
 import (
-	"encoding/binary"
 	"fmt"
 	"time"
 
+	"github.com/GoldenDeals/StatusCoin/internal/gen"
 	"github.com/libp2p/go-libp2p/core/network"
+	"google.golang.org/protobuf/proto"
 )
 
 func handleStream(stream network.Stream) {
@@ -20,7 +21,14 @@ func writeCounter(s network.Stream) {
 		<-time.After(time.Second)
 		counter++
 
-		err := binary.Write(s, binary.BigEndian, counter)
+		mes := &gen.MyMessage{Content: fmt.Sprintf("Hello %d", counter), Timestamp: time.Now().Unix()}
+
+		buff, err := proto.Marshal(mes)
+		if err != nil {
+			panic(err)
+		}
+
+		_, err = s.Write(buff)
 		if err != nil {
 			panic(err)
 		}
@@ -29,13 +37,19 @@ func writeCounter(s network.Stream) {
 
 func readCounter(s network.Stream) {
 	for {
-		var counter uint64
+		var mes gen.WrapperMessage
 
-		err := binary.Read(s, binary.BigEndian, &counter)
+		buf := make([]byte, 1024)
+		n, err := s.Read(buf)
 		if err != nil {
 			panic(err)
 		}
 
-		fmt.Printf("Received %d from %s\n", counter, s.ID())
+		err = proto.Unmarshal(buf[:n], &mes)
+		if err != nil {
+			panic(err)
+		}
+
+		// fmt.Printf("Received %s:%d from %s\n", mes.Content, mes.Timestamp, s.ID())
 	}
 }
