@@ -1,0 +1,8 @@
+name: SuoerCoin
+version: v0.0.0
+
+log:
+  level: 5
+  out: 
+    - stdout
+    - ./logs/$date/$time.log
